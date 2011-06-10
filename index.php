@@ -16,8 +16,8 @@ print_r($tree->getTree());
 print_r($tree->getTree(4));
 
 // Now print out the flat results.
-print_r($tree->getFlat(0, NULL));
+print_r($tree->getFlat(0, TRUE));
 
 // Now print out the flat results filtered.
-print_r($tree->getFlat(4, NULL));
+print_r($tree->getFlat(4, TRUE));
 ?>
