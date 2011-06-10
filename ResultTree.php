@@ -148,7 +148,7 @@ class ResultTree {
       }
 
       // Check for our filter.
-      if( !$filter && ($filterArg == $id)) {
+      if( !$filter && ($filterId == $id)) {
         $filter = &$flat[$id];
       } 
 
