@@ -1,12 +1,8 @@
 <?php
 /**
- * ResultTree PHP class
- * Developed by Travis Tidwell - travis @ allplayers.com
- * License:  GPLv3
+ * The ResultTree class.
  * 
- * This class will take a flat array that has parent-child relationships
- * and builds a tree structure from that data.  For example, suppose you 
- * have a database that returns the following.
+ * Usage:  Given the following flat array structure.
  * 
  *    Title     |      id       |      pid
  * ----------------------------------------------
@@ -21,67 +17,11 @@
  *   Item 9     |      9        |       8
  *   Item 10    |     10        |       8
  * 
- * This class would restructure this so that it would look like...
+ * It will build a tree structure from that flat data.
  * 
- * stdClass(
- *   children -> array(
- *     1 => stdClass(
- *       data => {ROW DATA},
- *       index => 0,
- *       children => array(
- *         2 => stdClass(
- *           data => {ROW DATA},
- *           index => 1,
- *           children => array(
- *             4 => stdClass(
- *               data => {ROW DATA},
- *               index => 3,
- *               children => array(
- *                 5 => stdClass(
- *                   data => {ROW DATA},
- *                   index => 4,
- *                   children => array()
- *                 )
- *               )
- *             )
- *           )
- *         ),
- *         3 => stdClass(
- *           data => {ROW DATA},
- *           index => 2,
- *           children => array()
- *         )
- *       )
- *     )
- *   ),
- *   6 => stdClass(
- *     data => {ROW DATA},
- *     index => 5,
- *     children => array(
- *       7 => stdClass(
- *         data => {ROW DATA},
- *         index => 6,
- *         children => array()
- *       ),
- *       8 => stdClass(
- *         data => {ROW DATA},
- *         index => 7,
- *         children => array(
- *           9 => stdClass(
- *             data => {ROW DATA},
- *             index => 8,
- *             children => array()
- *           ),
- *           10 => stdClass(
- *             data => {ROW DATA},
- *             index => 9,
- *             children => array()
- *           )
- *         )
- *       )
- *     )
- *   ) 
- * );
+ * $tree = new ResultTree($results);
+ * print_r( $tree->getTree() );
+ * 
  */
 class ResultTree {
   

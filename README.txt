@@ -3,7 +3,9 @@ Developed by Travis Tidwell - travis @ allplayers.com
 License:  GPLv3
 
 This class will take a flat array that has parent-child relationships
-and builds a tree structure from that data.  For example, suppose you 
+and builds a tree structure from that data.  It will also do so 
+non-recursively which means that it can handle very large data sets
+without running out of memory or processing.  For example, suppose you 
 have a database that returns the following.
 
    Title     |      id       |      pid
