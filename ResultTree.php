@@ -112,6 +112,44 @@ class ResultTree {
   }
   
   /**
+   * This will return just a structure of the id relationships of the tree.
+   */
+  public function getRelationships($filterId = 0) {
+    $flat = array();
+    $relationships = array();
+    $filter = NULL;
+
+    // Iterate through the results.
+    foreach ($this->result as $index => $result) {    
+      $pid = $result->{$this->pid};
+      $id = $result->{$this->id};
+
+      if (!isset($flat[$id])) {
+        // Create the item if it does not exist.
+        $flat[$id] = array();
+      }
+
+      // Check for our filter.
+      if( !$filter && ($filterId == $id)) {
+        $filter = &$flat[$id];
+      } 
+
+      // Add this to either the root tree, or the parent list.
+      if ($pid) {
+        $flat[$pid][$id] = &$flat[$id];
+      } else {
+        $relationships[$id] = &$flat[$id];
+      }
+    }
+
+    // Set the tree based on if they provided a filter or not.
+    $relationships = $filter ? $filter : $relationships;
+    
+    // Return either the filtered result, or the whole result.
+    return $relationships;    
+  }
+  
+  /**
    * This will return flat results, but in the order of the 
    * tree structure.
    * 
@@ -164,17 +202,28 @@ class ResultTree {
    * @param type $flat 
    */
   private function _getFlat($tree, &$flat) {
+    // Keep track of all ids added.
+    static $ids = array();
+    
     // Iterate through all the children.
     foreach($tree->children as $id => $value) {
+      
+      // Check to make sure we haven't added this id before.
+      // This will keep infinite recursion from occuring.
+      if (!in_array($id, $ids)) {
 
-      // Add that result to the items.
-      $flat[] = $this->result[$value->index];
+        // Add this id to our array.
+        $ids[] = $id;
+        
+        // Add that result to the items.
+        $flat[] = $this->result[$value->index];
 
-      // If this has a child, then.
-      if ($value->children) {
+        // If this has a child, then.
+        if ($value->children) {
 
-        // Normalize the children.
-        $this->_getFlat($value, $flat);
+          // Normalize the children.
+          $this->_getFlat($value, $flat);
+        }
       }
     }  
   }
