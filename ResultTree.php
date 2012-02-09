@@ -1,9 +1,9 @@
 <?php
 /**
  * The ResultTree class.
- * 
+ *
  * Usage:  Given the following flat array structure.
- * 
+ *
  *    Title     |      id       |      pid
  * ----------------------------------------------
  *   Item 1     |      1        |       0
@@ -16,51 +16,50 @@
  *   Item 8     |      8        |       6
  *   Item 9     |      9        |       8
  *   Item 10    |     10        |       8
- * 
+ *
  * It will build a tree structure from that flat data.
- * 
+ *
  * $tree = new ResultTree($results);
  * print_r( $tree->getTree() );
- * 
+ *
  */
 class ResultTree {
-  
+
   // The original result.
   private $result = NULL;
-  
+
   // The name of the parent id field.
   private $pid = 'pid';
-  
+
   // The name of the main id field.
   private $id = 'id';
-  
+
   // The number of results.
   private $num_results = 0;
-  
+
   // The tree object.
   private $tree = NULL;
-  
+
   /**
    * Constructor for the Result tree.
-   * 
+   *
    * @param type $result
    * @param type $id
-   * @param type $pid 
+   * @param type $pid
    */
   public function __construct($result, $id = 'id', $pid = 'pid') {
     $this->result = $result;
     $this->id = $id;
     $this->pid = $pid;
     $this->num_results = count($result);
-    $this->null_orphan_parents();
   }
-  
+
   /**
    * This will return the results array as a structured TREE.
-   * 
+   *
    * @param type $filterId
    * @return A structured tree array with the following signature.
-   * 
+   *
    * array(
    *   pid => stdClass(
    *     data => {THE ORIGINAL ROW DATA},
@@ -70,14 +69,18 @@ class ResultTree {
    *     )
    *   )
    * )
-   */ 
+   */
   public function getTree($filterId = 0) {
     $flat = array();
     $this->tree = new stdClass();
-    $filter = NULL;
+
+    // Null the orphan parents if no filter is provided.
+    if (!$filterId) {
+      $this->null_orphan_parents();
+    }
 
     // Iterate through the results.
-    foreach ($this->result as $index => $result) {    
+    foreach ($this->result as $index => $result) {
       $pid = $result->{$this->pid};
       $id = $result->{$this->id};
 
@@ -87,40 +90,42 @@ class ResultTree {
         $flat[$id]->children = array();
       }
 
-      // Check for our filter.
-      if( !$filter && ($filterId == $id)) {
-        $filter = &$flat[$id];
-      } 
-
       // Add the views index.
       $flat[$id]->data = $result;
       $flat[$id]->index = $index;
 
       // Add this to either the root tree, or the parent list.
       if ($pid) {
-        $flat[$pid]->children[$id] = &$flat[$id];
-      } else {
+        if ($filterId == $pid) {
+          $this->tree->children[$id] = &$flat[$id];
+        }
+        else {
+          $flat[$pid]->children[$id] = &$flat[$id];
+        }
+      }
+      else if (!$filterId) {
         $this->tree->children[$id] = &$flat[$id];
       }
     }
 
-    // Set the tree based on if they provided a filter or not.
-    $this->tree = $filter ? $filter : $this->tree;
-    
     // Return either the filtered result, or the whole result.
-    return $this->tree;    
+    return $this->tree;
   }
-  
+
   /**
    * This will return just a structure of the id relationships of the tree.
    */
   public function getRelationships($filterId = 0) {
     $flat = array();
     $relationships = array();
-    $filter = NULL;
+
+    // Null the orphan parents if no filter is provided.
+    if (!$filterId) {
+      $this->null_orphan_parents();
+    }
 
     // Iterate through the results.
-    foreach ($this->result as $index => $result) {    
+    foreach ($this->result as $index => $result) {
       $pid = $result->{$this->pid};
       $id = $result->{$this->id};
 
@@ -129,103 +134,104 @@ class ResultTree {
         $flat[$id] = array();
       }
 
-      // Check for our filter.
-      if( !$filter && ($filterId == $id)) {
-        $filter = &$flat[$id];
-      } 
-
       // Add this to either the root tree, or the parent list.
       if ($pid) {
-        $flat[$pid][$id] = &$flat[$id];
-      } else {
+        if ($filterId == $pid) {
+          $relationships[$id] = &$flat[$id];
+        }
+        else {
+          $flat[$pid][$id] = &$flat[$id];
+        }
+      }
+      else if (!$filterId) {
         $relationships[$id] = &$flat[$id];
       }
     }
 
-    // Set the tree based on if they provided a filter or not.
-    $relationships = $filter ? $filter : $relationships;
-    
     // Return either the filtered result, or the whole result.
-    return $relationships;    
+    return $relationships;
   }
-  
+
   /**
-   * This will return flat results, but in the order of the 
+   * This will return flat results, but in the order of the
    * tree structure.
-   * 
-   * @param type $filterId 
+   *
+   * @param type $filterId
    */
   public function getFlat($filterId = 0, $reset = FALSE) {
     $this->tree = (!$reset && $this->tree) ? $this->tree : $this->getTree($filterId);
     $flat = array();
     $this->_getFlat($this->tree, $flat);
-    return $flat;   
-  }  
-  
+    return $flat;
+  }
+
   /**
    * Will take a views result and NULL out the orphans parents.
    */
   private function null_orphan_parents() {
-    
+
     // Iterate through all of our results.
     for($i=0; $i < $this->num_results; $i++ ) {
-      
+
       // If there is a parent item.
       if( $this->result[$i]->{$this->pid} ) {
-        
+
         $found = FALSE;
-        
+
         // Reiterate over the array and try to locate this parent item.
         for($j=0; $j < $this->num_results; $j++ ) {
-          
+
           // Check if we found this parent.
           if( $this->result[$j]->{$this->id} == $this->result[$i]->{$this->pid} ) {
             $found = TRUE;
             break;
           }
         }
-        
+
         // If it was not found...
         if( !$found ) {
-          
+
           // Null out the parent id so that we can build an acurate tree.
           $this->result[$i]->{$this->pid} = NULL;
         }
       }
-    }    
+    }
   }
-  
+
   /**
    * Recursive function to flatten a tree structure.
-   * 
+   *
    * @param type $tree
-   * @param type $flat 
+   * @param type $flat
    */
   private function _getFlat($tree, &$flat) {
     // Keep track of all ids added.
     static $ids = array();
-    
-    // Iterate through all the children.
-    foreach($tree->children as $id => $value) {
+
+    if (!empty($tree->children)) {
       
-      // Check to make sure we haven't added this id before.
-      // This will keep infinite recursion from occuring.
-      if (!in_array($id, $ids)) {
+      // Iterate through all the children.
+      foreach($tree->children as $id => $value) {
 
-        // Add this id to our array.
-        $ids[] = $id;
-        
-        // Add that result to the items.
-        $flat[] = $this->result[$value->index];
+        // Check to make sure we haven't added this id before.
+        // This will keep infinite recursion from occuring.
+        if (!in_array($id, $ids)) {
 
-        // If this has a child, then.
-        if ($value->children) {
+          // Add this id to our array.
+          $ids[] = $id;
 
-          // Normalize the children.
-          $this->_getFlat($value, $flat);
+          // Add that result to the items.
+          $flat[] = $this->result[$value->index];
+
+          // If this has a child, then.
+          if ($value->children) {
+
+            // Normalize the children.
+            $this->_getFlat($value, $flat);
+          }
         }
       }
-    }  
+    }
   }
 }
 ?>
